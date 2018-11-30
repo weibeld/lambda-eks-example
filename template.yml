@@ -4,5 +4,5 @@ Resources:
   LambdaEksTestFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: bin/handler
+      Handler: handler
       Runtime: go1.x
