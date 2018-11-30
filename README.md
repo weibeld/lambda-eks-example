@@ -1,36 +1,34 @@
-# Lambda EKS Test
+# Lambda EKS Example
 
-Accessing an EKS cluster from a Lambda function.
+Accessing an [Amazon EKS](https://aws.amazon.com/eks/) Kubernetes cluster from an [AWS Lambda](https://aws.amazon.com/lambda/) function.
 
 ## What is it?
 
-This is a Go Lambda function that accesses an EKS cluster. In particular, the Lambda function creates a new [deployment](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.12/#deployment-v1-apps) in an existing EKS cluster.
+This is a Go Lambda function that accesses an EKS cluster. In particular, the Lambda function creates a new [deployment](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.12/#deployment-v1-apps) in an existing EKS cluster. The deployment consists of two replicas of an [NGINX](https://hub.docker.com/_/nginx/) pod.
 
-The program uses the [Kubernetes Go client library](https://github.com/kubernetes/client-go) (client-go) to access the Kubernetes cluster (more precisely, to talk to the API server of the cluster). Read [below](why-go) why we use Go.
+The Lambda function code uses the [Kubernetes Go client library](https://github.com/kubernetes/client-go) (client-go) to access the Kubernetes cluster. Read [below](why-go) why Go is used. Note that by using a Kubernetes client library, you can do everything that you can do with `kubectl`.
 
-A Lambda function that accesses an EKS cluster requires some additional steps which are summarised in the [Requirements](requirements) section. You have to work through this section before deploying the Lambda function.
-
-The code in this repository requires an already existing EKS cluster.
+Accessing an EKS cluster requires some additional steps which are summarised in the [Requirements](requirements) section. You have to work through this section before deploying the Lambda function.
 
 
-## Compilation
+## Compile
 
-Since we use Go, the Lambda handler function has to be compiled before deployment (what's deployed is a statically linked binary). Furthermore, the code has to be compiled specifically for the [Lambda execution environment](https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html) platform (which is Linux). Compiling for any target platform can be achieved with Go [cross compiling](https://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5).
+Since we use Go, the Lambda function code has to be compiled before deployment (what's deployed is the resulting statically linked binary file). Furthermore, compilation must target the [Lambda execution environment](https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html) platform (which is Linux). Compiling for any target platform can be achieved with Go [cross compiling](https://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5).
 
-To cross-compile the code for the Lambda execution environment, use the following command (already defined in [`build-handler.sh`](build-handler.sh)):
+Use the following command for compilation (already defined in [`build-handler.sh`](build-handler.sh)):
 
 ~~~bash
 GOOS=linux go build handler.go
 ~~~
 
-## Deployment
+## Deploy
 
-The Lambda application is defined with [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) (in [`template.yml`](template.yml)).
+The Lambda application is defined with the AWS [Serverless Application Model (SAM)](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) in the file [`template.yml`](template.yml).
 
-Deploy the Lambda application to AWS with the following SAM CLI commands (already defined in [`deploy.sh`](deploy.sh])):
+Deploy the Lambda application with the following SAM CLI commands (already defined in [`deploy.sh`](deploy.sh])):
 
 ~~~bash
-sam package --template-file template.yml --output-template-file package.yml --s3-<SOME_BUCKET>
+sam package --template-file template.yml --output-template-file package.yml --s3 <SOME_BUCKET>
 sam deploy --template-file package.yml --capabilities CAPABILITY_IAM --stack-name lambda-eks-test
 ~~~
 
@@ -43,6 +41,8 @@ To run the function locally, use the following SAM CLI command (already defined 
 ~~~bash
 sam local invoke --no-event LambdaEksTestFunction
 ~~~
+
+Note that this also requires all the requirements from the next section. The IAM identity that is used in this case is the one configured on your local machine (the one returned by `aws sts get-caller-identity`).
 
 
 ## Requirements
@@ -80,7 +80,7 @@ To make requests to a Kubernetes cluster, a [*kubeconfig*](https://kubernetes.io
 
 The created `kubeconfig` file must be included in the ZIP file for the Lambda function.
 
-### Authentication for Lambda execution role
+### Authentication
 
 The Go client library uses the IAM role assigned to the Lambda function to authenticate to the EKS cluster (the determination of the role and encoding in the bearer authentication token is done by the `aws-iam-authenticator`).
 
@@ -103,7 +103,7 @@ To make the cluster recognise and authenticate requests coming from the Lambda f
 3. Save the file (the changes are automatically applied to the cluster)    
 
 
-### Authorisation for Lambda execution role
+### Authorisation
 
 At this point, requests from the Lambda function to the cluster get *authenticated*, but the specific Kubernetes action requested by our program (create deployments) does not yet get *authorised*.
 
