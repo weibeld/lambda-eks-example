@@ -1,12 +1,12 @@
 # Lambda EKS Example
 
-Accessing an [Amazon EKS](https://aws.amazon.com/eks/) Kubernetes cluster from an [AWS Lambda](https://aws.amazon.com/lambda/) function.
+Accessing an [Amazon EKS](https://aws.amazon.com/eks/) Kubernetes cluster from an [AWS Lambda](https://aws.amazon.com/lambda/) function with [Go](https://golang.org/).
 
 ## What is it?
 
-This is a Go Lambda function that accesses an EKS cluster. In particular, the Lambda function creates a new [deployment](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.12/#deployment-v1-apps) in an existing EKS cluster. The deployment consists of two replicas of an [NGINX](https://hub.docker.com/_/nginx/) pod.
+This is a Go Lambda function that interacts with an EKS cluster. In particular, the Lambda function creates a new [deployment](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.12/#deployment-v1-apps) in an existing EKS cluster. The deployment consists of two replicas of an [NGINX](https://hub.docker.com/_/nginx/) pod.
 
-The Lambda function code uses the [Kubernetes Go client library](https://github.com/kubernetes/client-go) (client-go) to access the Kubernetes cluster. Read [below](why-go) why Go is used. Note that by using a Kubernetes client library, you can do everything that you can do with `kubectl`.
+The Lambda function code uses the [Kubernetes Go client library](https://github.com/kubernetes/client-go) (client-go) to access the Kubernetes cluster (note that with a client library, you can do everything that you can do with `kubectl`). Read [below](why-go) why Go is used.
 
 Accessing an EKS cluster requires some additional steps which are summarised in the [Requirements](requirements) section. You have to work through this section before deploying the Lambda function.
 
@@ -63,7 +63,7 @@ Authentication against an EKS cluster requires the `[aws-iam-authenticator](http
     GOOS=linux go build github.com/kubernetes-sigs/aws-iam-authenticator/cmd/aws-iam-authenticator
     ~~~
 
-The created `aws-iam-authenticator` must be included in the ZIP file for the Lambda function.
+The created `aws-iam-authenticator` binary must be saved in the project root directory so that it is included in the Lambda function ZIP file.
 
 ### *kubeconfig* File
 
@@ -78,7 +78,7 @@ To make requests to a Kubernetes cluster, a [*kubeconfig*](https://kubernetes.io
 2. In the created file, replace `aws-iam-authenticator` with `./aws-iam-authenticator` (in the `users.user.exec.command` field)
     - This is necessary to make the command executable in the Lambda execution enviroment, because in the Lambda execution environment `aws-iam-authenticator` is not in the `PATH`
 
-The created `kubeconfig` file must be included in the ZIP file for the Lambda function.
+The created `kubeconfig` file must be saved in the project root directory so that is included in the Lambda function ZIP file.
 
 ### Authentication
 
